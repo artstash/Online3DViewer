@@ -46,6 +46,8 @@ export class ImporterThreeBase extends ImporterBase
         this.loader = null;
         this.materialIdToIndex = null;
         this.objectUrlToFileName = null;
+        this.animationClips = null;
+        this.threeObject = null;
     }
 
     ResetContent ()
@@ -53,6 +55,8 @@ export class ImporterThreeBase extends ImporterBase
         this.loader = null;
         this.materialIdToIndex = new Map ();
         this.objectUrlToFileName = new Map ();
+        this.animationClips = [];
+        this.threeObject = null;
     }
 
     ImportContent (fileContent, onFinish)
@@ -142,6 +146,13 @@ export class ImporterThreeBase extends ImporterBase
         }
 
         let mainObject = this.GetMainObject (loadedObject);
+
+        let animations = loadedObject.animations || mainObject.animations || [];
+        if (animations.length > 0) {
+            this.animationClips = animations;
+            this.threeObject = mainObject;
+        }
+
         let rootNode = this.model.GetRootNode ();
         rootNode.SetTransformation (GetObjectTransformation (mainObject));
         for (let childObject of mainObject.children) {
@@ -280,6 +291,16 @@ export class ImporterThreeBase extends ImporterBase
             threeColor = this.colorConverter.Convert (threeColor);
         }
         return ConvertThreeColorToColor (threeColor);
+    }
+
+    GetAnimationClips ()
+    {
+        return this.animationClips || [];
+    }
+
+    GetThreeObject ()
+    {
+        return this.threeObject || null;
     }
 }
 

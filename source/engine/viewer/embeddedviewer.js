@@ -160,6 +160,9 @@ export class EmbeddedViewer
                 }
 
                 this.model = importResult.model;
+                if (importResult.animationClips && importResult.animationClips.length > 0) {
+                    this.viewer.SetAnimationClips (threeObject, importResult.animationClips);
+                }
                 if (this.parameters.onModelLoaded) {
                     this.parameters.onModelLoaded ();
                 }
@@ -203,6 +206,66 @@ export class EmbeddedViewer
     GetModel ()
     {
         return this.model;
+    }
+
+    /**
+     * Returns the list of animation clips available in the loaded model.
+     * @returns {THREE.AnimationClip[]} Array of animation clips, or empty array if none.
+     */
+    GetAnimationClips ()
+    {
+        return this.viewer.GetAnimationClips ();
+    }
+
+    /**
+     * Plays the animation clip at the given index.
+     * @param {number} index Index of the animation clip to play.
+     */
+    PlayAnimation (index)
+    {
+        this.viewer.PlayAnimation (index);
+    }
+
+    /**
+     * Pauses the currently playing animation.
+     */
+    PauseAnimation ()
+    {
+        this.viewer.PauseAnimation ();
+    }
+
+    /**
+     * Resumes a paused animation.
+     */
+    ResumeAnimation ()
+    {
+        this.viewer.ResumeAnimation ();
+    }
+
+    /**
+     * Stops the currently playing animation and resets playback.
+     */
+    StopAnimation ()
+    {
+        this.viewer.StopAnimation ();
+    }
+
+    /**
+     * Sets the animation playback to a specific time in seconds.
+     * @param {number} time Time in seconds.
+     */
+    SetAnimationTime (time)
+    {
+        this.viewer.SetAnimationTime (time);
+    }
+
+    /**
+     * Returns whether an animation is currently playing.
+     * @returns {boolean}
+     */
+    IsAnimationPlaying ()
+    {
+        return this.viewer.IsAnimationPlaying ();
     }
 
     /**

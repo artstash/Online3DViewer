@@ -53,6 +53,8 @@ export class ImportResult
         this.upVector = null;
         this.usedFiles = null;
         this.missingFiles = null;
+        this.animationClips = [];
+        this.threeObject = null;
     }
 }
 
@@ -233,6 +235,8 @@ export class Importer
                 result.usedFiles = this.usedFiles;
                 result.missingFiles = this.missingFiles;
                 result.upVector = importer.GetUpDirection ();
+                result.animationClips = importer.GetAnimationClips ();
+                result.threeObject = importer.GetThreeObject ();
                 callbacks.onImportSuccess (result);
             },
             onError : () => {

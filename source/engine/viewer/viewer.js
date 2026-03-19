@@ -56,8 +56,9 @@ export function GetShadingTypeOfObject (mainObject)
     let shadingType = null;
     TraverseThreeObject (mainObject, (obj) => {
         if (obj.isMesh) {
-            for (const material of obj.material) {
-                if (material.type === 'MeshPhongMaterial') {
+            let materials = Array.isArray (obj.material) ? obj.material : [obj.material];
+            for (const material of materials) {
+                if (material.type === 'MeshPhongMaterial' || material.type === 'MeshLambertMaterial') {
                     shadingType = ShadingType.Phong;
                 } else if (material.type === 'MeshStandardMaterial') {
                     shadingType = ShadingType.Physical;
@@ -175,6 +176,12 @@ export class Viewer
         this.settings = {
             animationSteps : 40
         };
+
+        this.animationMixer = null;
+        this.animationClips = [];
+        this.animationClock = null;
+        this.isAnimationPlaying = false;
+        this.animationFrameId = null;
     }
 
     Init (canvas)
@@ -427,6 +434,118 @@ export class Viewer
         this.Render ();
     }
 
+    SetAnimationClips (object, clips)
+    {
+        this.ClearAnimation ();
+        if (!clips || clips.length === 0) {
+            return;
+        }
+        this.animationClips = clips;
+        this.animationMixer = new THREE.AnimationMixer (object);
+        this.animationClock = new THREE.Clock (false);
+    }
+
+    GetAnimationClips ()
+    {
+        return this.animationClips;
+    }
+
+    PlayAnimation (index)
+    {
+        if (this.animationMixer === null || index < 0 || index >= this.animationClips.length) {
+            return;
+        }
+        this.animationMixer.stopAllAction ();
+        let clip = this.animationClips[index];
+        let action = this.animationMixer.clipAction (clip);
+        action.play ();
+        this.animationClock.start ();
+        this.isAnimationPlaying = true;
+        this.StartAnimationLoop ();
+    }
+
+    PauseAnimation ()
+    {
+        if (this.animationMixer === null) {
+            return;
+        }
+        this.isAnimationPlaying = false;
+        this.animationClock.stop ();
+        this.StopAnimationLoop ();
+    }
+
+    ResumeAnimation ()
+    {
+        if (this.animationMixer === null || this.isAnimationPlaying) {
+            return;
+        }
+        this.animationClock.start ();
+        this.isAnimationPlaying = true;
+        this.StartAnimationLoop ();
+    }
+
+    StopAnimation ()
+    {
+        if (this.animationMixer === null) {
+            return;
+        }
+        this.animationMixer.stopAllAction ();
+        this.isAnimationPlaying = false;
+        this.animationClock.stop ();
+        this.StopAnimationLoop ();
+        this.Render ();
+    }
+
+    SetAnimationTime (time)
+    {
+        if (this.animationMixer === null) {
+            return;
+        }
+        this.animationMixer.setTime (time);
+        this.Render ();
+    }
+
+    IsAnimationPlaying ()
+    {
+        return this.isAnimationPlaying;
+    }
+
+    StartAnimationLoop ()
+    {
+        if (this.animationFrameId !== null) {
+            return;
+        }
+        let animate = () => {
+            this.animationFrameId = requestAnimationFrame (animate);
+            let delta = this.animationClock.getDelta ();
+            if (delta > 0) {
+                this.animationMixer.update (delta);
+                this.Render ();
+            }
+        };
+        this.animationFrameId = requestAnimationFrame (animate);
+    }
+
+    StopAnimationLoop ()
+    {
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame (this.animationFrameId);
+            this.animationFrameId = null;
+        }
+    }
+
+    ClearAnimation ()
+    {
+        this.StopAnimationLoop ();
+        if (this.animationMixer !== null) {
+            this.animationMixer.stopAllAction ();
+            this.animationMixer = null;
+        }
+        this.animationClips = [];
+        this.animationClock = null;
+        this.isAnimationPlaying = false;
+    }
+
     AddExtraObject (object)
     {
         this.extraModel.AddObject (object);
@@ -435,6 +554,7 @@ export class Viewer
 
     Clear ()
     {
+        this.ClearAnimation ();
         this.mainModel.Clear ();
         this.extraModel.Clear ();
         this.Render ();
@@ -595,6 +715,7 @@ export class Viewer
 
     Destroy ()
     {
+        this.ClearAnimation ();
         this.Clear ();
         this.renderer.dispose ();
     }

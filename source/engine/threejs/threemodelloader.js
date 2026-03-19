@@ -53,6 +53,7 @@ export class ThreeModelLoader
             },
             onImportSuccess : (importResult) => {
                 callbacks.onVisualizationStart ();
+                let hasAnimations = importResult.animationClips.length > 0 && importResult.threeObject !== null;
                 let params = new ModelToThreeConversionParams ();
                 params.forceMediumpForMaterials = this.hasHighpDriverIssue;
                 let output = new ModelToThreeConversionOutput ();
@@ -63,14 +64,18 @@ export class ThreeModelLoader
                     onModelLoaded : (threeObject) => {
                         this.defaultMaterials = output.defaultMaterials;
                         this.objectUrls = output.objectUrls;
+                        let renderObject = hasAnimations ? importResult.threeObject : threeObject;
+                        if (hasAnimations) {
+                            this.CleanupBrokenTextures (renderObject);
+                        }
                         if (importResult.upVector === Direction.X) {
                             let rotation = new THREE.Quaternion ().setFromAxisAngle (new THREE.Vector3 (0.0, 0.0, 1.0), Math.PI / 2.0);
-                            threeObject.quaternion.multiply (rotation);
+                            renderObject.quaternion.multiply (rotation);
                         } else if (importResult.upVector === Direction.Z) {
                             let rotation = new THREE.Quaternion ().setFromAxisAngle (new THREE.Vector3 (1.0, 0.0, 0.0), -Math.PI / 2.0);
-                            threeObject.quaternion.multiply (rotation);
+                            renderObject.quaternion.multiply (rotation);
                         }
-                        callbacks.onModelFinished (importResult, threeObject);
+                        callbacks.onModelFinished (importResult, renderObject);
                         this.inProgress = false;
                     }
                 });
@@ -105,6 +110,24 @@ export class ThreeModelLoader
                 }
             }
         }
+    }
+
+    CleanupBrokenTextures (object)
+    {
+        let textureProps = ['map', 'normalMap', 'bumpMap', 'emissiveMap', 'specularMap', 'aoMap'];
+        object.traverse ((obj) => {
+            if (obj.isMesh) {
+                let materials = Array.isArray (obj.material) ? obj.material : [obj.material];
+                for (let material of materials) {
+                    for (let prop of textureProps) {
+                        if (material[prop] && (!material[prop].image || material[prop].image.width === 0)) {
+                            material[prop] = null;
+                            material.needsUpdate = true;
+                        }
+                    }
+                }
+            }
+        });
     }
 
     RevokeObjectUrls ()

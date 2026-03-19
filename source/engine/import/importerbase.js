@@ -97,6 +97,16 @@ export class ImporterBase
         return this.model;
     }
 
+    GetAnimationClips ()
+    {
+        return [];
+    }
+
+    GetThreeObject ()
+    {
+        return null;
+    }
+
     SetError (message)
     {
         this.error = true;
